@@ -1,0 +1,19 @@
+ defp find_index2(string = <<x::binary-size(14), _rest::binary>>, index \\ 14) do
+    list = String.graphemes(x)
+    uniques = list
+    |> Enum.uniq()
+
+    elem = list
+    |> Kernel.--(uniques)
+    |> List.first()
+
+    n = list
+    |> Enum.find_index(fn x -> x == elem end)
+
+    if n == nil do
+      index
+    else
+      <<_drop::binary-size(n + 1), next::binary>> = string
+      find_index2(next, index + n + 1)
+    end
+  end

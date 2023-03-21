@@ -1,0 +1,41 @@
+defmodule Nine do
+  @moduledoc """
+  Documentation for `Nine`.
+  """
+
+  @doc """
+  Hello world.
+
+  ## Examples
+
+      iex> Nine.hello()
+      :world
+
+  """
+  def parse_motion(<<dir, " ", steps::binary>>), do: {[dir], String.to_integer(steps)}
+
+  def adjust({x1, y1} = a, {x2, y2} = b) when abs(x2 - x1) > 1 or abs(y2 - y1) > 1, do: clamp_adjust(a, b)
+  def adjust(_, b), do: b
+
+  def clamp_adjust({hx, hy}, {tx, ty}), do: {clamp_adjust(hx, tx), clamp_adjust(hy, ty)}
+  def clamp_adjust(h, t), do: t + min(max(h - t, -1), 1)
+
+  def update_rope([head, last]), do: [head, adjust(head, last)]
+  def update_rope([head, next | tail]), do: [head | update_rope([adjust(head, next) | tail])]
+
+  def execute_motion({_, 0}, state), do: state
+  def execute_motion({dir, dist}, %{rope: [{x, y} | tail], visited: visited} = state) do
+    %{^dir => {mx, my}} = %{'R' => {1, 0}, 'L' => {-1, 0}, 'U' => {0, 1}, 'D' => {0, -1}}
+    new_head = {x + mx, y + my}
+    rope = update_rope([new_head | tail])
+    state = %{state | rope: rope, visited: MapSet.put(visited, List.last(rope))}
+    execute_motion({dir, dist - 1}, state)
+  end
+
+  def simulate(rope_len, input) do
+    motions = input |> File.read!() |> String.split("\n", trim: true) |> Enum.map(&parse_motion/1)
+    state = %{rope: for(_ <- 1..rope_len, do: {0, 0}), visited: MapSet.new([])}
+    x = Enum.reduce(motions, state, &execute_motion/2)
+    x.visited |> MapSet.size()
+  end
+end
